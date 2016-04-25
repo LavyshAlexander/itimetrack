@@ -77,7 +77,7 @@ def parseConfigFile(configFile=None):
     """
 
     if not configFile:
-        configFile = os.path.join(os.path.expanduser('~'), '.wakatime.cfg')
+        configFile = os.path.join(os.path.expanduser('~'), '.itimetrack.cfg')
 
     configs = configparser.SafeConfigParser()
     try:
