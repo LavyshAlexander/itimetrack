@@ -8,12 +8,24 @@ WakaTime
 
 .. image:: https://travis-ci.org/wakatime/wakatime.svg
     :target: https://travis-ci.org/wakatime/wakatime
+    :alt: Tests
 
 .. image:: https://coveralls.io/repos/wakatime/wakatime/badge.svg?branch=master&service=github
     :target: https://coveralls.io/github/wakatime/wakatime?branch=master
-    
+    :alt: Coverage
+
+.. image:: https://badge.fury.io/py/wakatime.svg
+    :target: https://pypi.python.org/pypi/wakatime
+    :alt: Version
+
+.. image:: https://gemnasium.com/badges/github.com/wakatime/wakatime.svg
+    :target: https://gemnasium.com/github.com/wakatime/wakatime
+    :alt: Dependencies
+
 .. image:: https://wakaslack.herokuapp.com/badge.svg
     :target: https://wakaslack.herokuapp.com
+    :alt: Slack
+
 
 Command line interface to `WakaTime <https://wakatime.com/>`_ used by all WakaTime `text editor plugins <https://wakatime.com/editors>`_.
 
@@ -22,14 +34,26 @@ Note: You shouldn't need to directly use this package unless you are `building y
 Go to http://wakatime.com/editors to install the plugin for your text editor or IDE.
 
 
+Installation
+------------
+
+Each `plugin <https://wakatime.com/editors>`_ should install wakatime for you, except for the `Emacs WakaTime plugin <https://github.com/wakatime/wakatime-mode>`_.
+
+Install the plugin for your IDE/editor at https://wakatime.com/editors, which will install wakatime-cli(this package) for you.
+
+If your plugin does not install wakatime-cli, install it with::
+
+    sudo pip install wakatime
+
+
 Usage
 -----
-
-Install the plugin for your IDE/editor at https://wakatime.com/editors
 
 If you are building a plugin using the `WakaTime API <https://wakatime.com/developers/>`_
 then follow the `Creating a Plugin <https://wakatime.com/help/misc/creating-plugin>`_
 guide.
+
+For command line options, run ``wakatime --help``.
 
 
 Configuring
@@ -54,15 +78,9 @@ format. An example config file looks like::
     offline = true
     proxy = https://user:pass@localhost:8080
     timeout = 30
-
-
-Installation
-------------
-
-Each `plugin <https://wakatime.com/editors>`_ should install wakatime for you, except for the `Emacs WakaTime plugin <https://github.com/wakatime/wakatime-mode>`_.
-If your plugin does not install wakatime cli(this package), install it with::
-
-    pip install wakatime
+    [projectmap]
+    projects/foo = new project name
+    ^/home/user/projects/bar(\d+)/ = project{0}
 
 
 Troubleshooting
@@ -93,7 +111,12 @@ Each plugin also has it's own log file for things outside of the common wakatime
 * **Vscode** logs to the developer console (Help -> Toggle Developer Tools)
 * **Xcode** type ``sudo tail -f /var/log/system.log`` in a Terminal to view Xcode errors
 
-Check that heartbeats are received by the WakaTime api with the ``last_heartbeat`` and ``last_plugin`` attributes from the `current user <https://wakatime.com/api/v1/users/current>`_ api resource. Saving a file forces a heartbeat to be sent.
+Check that heartbeats are received by the WakaTime api with the ``last_heartbeat`` and ``last_plugin`` attributes from the `current user <https://wakatime.com/api/v1/users/current>`_ api resource.
+You can also see a list of all your plugins and when they were last seen by the api with the `user_agents <https://wakatime.com/api/v1/users/current/user_agents>`_ api endpoint.
+
+Note: Saving a file forces a heartbeat to be sent.
+
+`Official API Docs <https://wakatime.com/api>`_
 
 
 Contributing

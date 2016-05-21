@@ -23,13 +23,10 @@ try:
 except (ImportError, SyntaxError):
     import json
 try:
-    from mock import ANY
+    from mock import ANY, call
 except ImportError:
-    from unittest.mock import ANY
-try:
-    from wakatime.packages import tzlocal
-except:
-    from wakatime.packages import tzlocal3 as tzlocal
+    from unittest.mock import ANY, call
+from wakatime.packages import tzlocal
 
 
 class BaseTestCase(utils.TestCase):
@@ -493,7 +490,7 @@ class BaseTestCase(utils.TestCase):
         self.patched['wakatime.offlinequeue.Queue.push'].assert_not_called()
         self.patched['wakatime.offlinequeue.Queue.pop'].assert_called_once_with()
 
-        self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].assert_called_once_with(ANY, cert=None, proxies={'https': 'localhost:1234'}, stream=False, timeout=30, verify=True)
+        self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].assert_called_once_with(ANY, cert=None, proxies={'https': 'localhost:1234'}, stream=False, timeout=60, verify=True)
 
     def test_entity_type_domain(self):
         response = Response()
@@ -605,7 +602,7 @@ class BaseTestCase(utils.TestCase):
         response.status_code = 201
         self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].return_value = response
 
-        package_path = 'wakatime.packages.tzlocal3.get_localzone' if is_py3 else 'wakatime.packages.tzlocal.get_localzone'
+        package_path = 'wakatime.packages.py3.tzlocal.get_localzone' if is_py3 else 'wakatime.packages.py2.tzlocal.get_localzone'
         timezone = tzlocal.get_localzone()
         timezone.zone = 'tz汉语' if is_py3 else 'tz\xe6\xb1\x89\xe8\xaf\xad'
         with utils.mock.patch(package_path) as mock_getlocalzone:
@@ -626,3 +623,59 @@ class BaseTestCase(utils.TestCase):
 
             headers = self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].call_args[0][0].headers
             self.assertEquals(headers.get('TimeZone'), u(timezone.zone).encode('utf-8') if is_py3 else timezone.zone)
+
+    def test_timezone_header(self):
+        response = Response()
+        response.status_code = 201
+        self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].return_value = response
+
+        entity = 'tests/samples/codefiles/emptyfile.txt'
+        config = 'tests/samples/configs/good_config.cfg'
+        args = ['--file', entity, '--config', config]
+        retval = execute(args)
+        self.assertEquals(retval, SUCCESS)
+        self.assertEquals(sys.stdout.getvalue(), '')
+        self.assertEquals(sys.stderr.getvalue(), '')
+
+        self.patched['wakatime.session_cache.SessionCache.get'].assert_called_once_with()
+        self.patched['wakatime.session_cache.SessionCache.delete'].assert_not_called()
+        self.patched['wakatime.session_cache.SessionCache.save'].assert_called_once_with(ANY)
+
+        self.patched['wakatime.offlinequeue.Queue.push'].assert_not_called()
+        self.patched['wakatime.offlinequeue.Queue.pop'].assert_called_once_with()
+
+        timezone = tzlocal.get_localzone()
+        headers = self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].call_args[0][0].headers
+        self.assertEquals(headers.get('TimeZone'), u(timezone.zone).encode('utf-8') if is_py3 else timezone.zone)
+
+    def test_extra_heartbeats_argument(self):
+        response = Response()
+        response.status_code = 201
+        self.patched['wakatime.packages.requests.adapters.HTTPAdapter.send'].return_value = response
+
+        entity = 'tests/samples/codefiles/emptyfile.txt'
+        config = 'tests/samples/configs/good_config.cfg'
+        args = ['--file', entity, '--config', config, '--extra-heartbeats']
+
+        with utils.mock.patch('wakatime.main.sys.stdin') as mock_stdin:
+            now = int(time.time())
+            heartbeats = json.dumps([{
+                'timestamp': now,
+                'entity': entity,
+                'entity_type': 'file',
+                'is_write': True,
+            }])
+            mock_stdin.read.return_value = heartbeats
+
+            retval = execute(args)
+
+            self.assertEquals(retval, SUCCESS)
+            self.assertEquals(sys.stdout.getvalue(), '')
+            self.assertEquals(sys.stderr.getvalue(), '')
+
+            self.patched['wakatime.session_cache.SessionCache.get'].assert_has_calls([call(), call()])
+            self.patched['wakatime.session_cache.SessionCache.delete'].assert_not_called()
+            self.patched['wakatime.session_cache.SessionCache.save'].assert_has_calls([call(ANY), call(ANY)])
+
+            self.patched['wakatime.offlinequeue.Queue.push'].assert_not_called()
+            self.patched['wakatime.offlinequeue.Queue.pop'].assert_has_calls([call(), call()])
